@@ -1,8 +1,9 @@
-import 'package:sqflite/sqflite.dart';
 import 'dart:async';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+
 import 'package:etsbiodata/models/biodata.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
 
 class DbHelper {
   static DbHelper _dbHelper;
@@ -37,7 +38,11 @@ class DbHelper {
         alamat TEXT,
         ipk TEXT,
         spp TEXT,
-        prodi TEXT
+        prodi TEXT,
+        tglLahir TEXT,
+        wali TEXT,
+        kelamin TEXT,
+        fakultas TEXT
       )
     ''');
   }

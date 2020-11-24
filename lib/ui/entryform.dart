@@ -1,10 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:etsbiodata/models/biodata.dart';
+import 'package:flutter/material.dart';
+
+import '../helper/dbhelper.dart';
+import 'home.dart';
 
 class EntryForm extends StatefulWidget {
   final Biodata biodata;
+  final bool isEdit;
 
-  EntryForm(this.biodata);
+  EntryForm(this.biodata, {this.isEdit = false});
 
   @override
   EntryFormState createState() => EntryFormState(this.biodata);
@@ -13,7 +17,9 @@ class EntryForm extends StatefulWidget {
 class EntryFormState extends State<EntryForm> {
   Biodata biodata;
   DateTime tglLahir = DateTime.now();
-
+  TextEditingController dosenController = TextEditingController();
+  TextEditingController tglLahirController = TextEditingController();
+  DbHelper dbHelper = DbHelper();
   List<String> listProdi = ['Teknik Elektro','Teknik Industri','Teknik Arsitektur', 'Teknik Mesin', 'Teknik Informatika'];
   List<String> listFakultas = ['Teknik','Ekonomi','Psikologi', 'Hukum'];
   List<String> listHobi = ['Badminton','Menari','Sepak Bola', 'Berenang'];
@@ -108,20 +114,21 @@ class EntryFormState extends State<EntryForm> {
     });
   }
 
-  // Future<Null> selectDate(BuildContext context) async{
-  //   final DateTime selected = await showDatePicker(
-  //       context: context,
-  //       initialDate: this.tglLahir,
-  //       firstDate: DateTime(1900, 1),
-  //       lastDate: DateTime.now()
-  //   );
+  Future<Null> selectDate(BuildContext context) async{
+    final DateTime selected = await showDatePicker(
+        context: context,
+        initialDate: this.tglLahir,
+        firstDate: DateTime(1900, 1),
+        lastDate: DateTime.now()
+    );
 
-  //   if(selected != null && selected != this.tglLahir){
-  //     setState(() {
-  //       this.tglLahir = selected;
-  //     });
-  //   }
-  // }
+    if(selected != null && selected != this.tglLahir){
+      setState(() {
+        this.tglLahir = selected;
+        this.tglLahirController.text = selected.toIso8601String();
+      });
+    }
+  }
 
   EntryFormState(this.biodata);
 
@@ -143,6 +150,12 @@ class EntryFormState extends State<EntryForm> {
     });
   }
 
+  void deleteBiodata(Biodata object) async {
+    int result = await dbHelper.delete(object.id);
+    Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) =>
+        Home()), (Route<dynamic> route) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (biodata != null) {
@@ -151,12 +164,20 @@ class EntryFormState extends State<EntryForm> {
       alamatController.text = biodata.alamat;
       ipkController.text = biodata.ipk;
       sppController.text = biodata.spp;
+      tglLahirController.text = biodata.tglLahir;
+      dosenController.text = biodata.wali;
+      valRadio = int.parse(biodata.kelamin);
     }
 
     return Scaffold(
         appBar: AppBar(
           title: biodata == null ? Text('Tambah Data') : Text('Ubah Data'),
-          leading: Icon(Icons.keyboard_arrow_left),
+          leading: IconButton(icon: Icon(Icons.keyboard_arrow_left), onPressed: () => Navigator.of(context).pop()),
+          actions: <Widget>[
+            biodata != null ?
+              IconButton(icon: Icon(Icons.delete), onPressed: () => deleteBiodata(biodata))
+                : Container()
+          ],
         ),
         body: Padding(
           padding: EdgeInsets.only(top: 15.0, left: 10.0, right: 10.0),
@@ -217,15 +238,21 @@ class EntryFormState extends State<EntryForm> {
               ),
 
               //tanggal lahir
-              // Padding(
-              //   padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
-              //   child: RaisedButton(
-              //     child: Text('Pilih Tanggal Lahir'),
-              //     onPressed: (){
-              //       selectDate(context);
-              //     },
-              //   ),
-              // ),
+              Padding(
+                padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
+                child: TextField(
+                  controller: tglLahirController,
+                  keyboardType: TextInputType.text,
+                  decoration: InputDecoration(
+                    labelText: 'Tanggal Lahir',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                  ),
+                  readOnly: true,
+                  onTap: () => selectDate(context),
+                ),
+              ),
 
               //jenis kelamin
               Padding(
@@ -234,98 +261,146 @@ class EntryFormState extends State<EntryForm> {
                   Text(
                     "Jenis Kelamin : ",
                   ),
-                  Radio(value: 0, groupValue: this.valRadio, onChanged: (int value){
-                    onChangedRadio(value);
-                  }),
-                  Text("Pria"),
-                  Radio(value: 1, groupValue: this.valRadio, onChanged: (int value){
-                    onChangedRadio(value);
-                  }),
-                  Text("Wanita"),
+                  Expanded(
+                    child: Row(
+                      children: <Widget>[
+                        Radio(value: 0, groupValue: this.valRadio, onChanged: (int value){
+                          onChangedRadio(value);
+                        }),
+                        Text("Pria"),
+                        Radio(value: 1, groupValue: this.valRadio, onChanged: (int value){
+                          onChangedRadio(value);
+                        }),
+                        Text("Wanita"),
+                      ],
+                    ),
+                  )
                 ]),
               ),
 
               //fakultas
-              // Padding(
-              //   padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
-              //   child: Row(children: <Widget>[
-              //     Text(
-              //       "Fakultas :",
-              //     ),
-              //     DropdownButton(
-              //       value: fitem,
-              //       items: listFakultas.map((String
-              //       value) {
-              //         return
-              //           DropdownMenuItem(
-              //             value: value,
-              //             child: Row(
-              //               children:
-              //               <Widget>[
-              //                 Text(value),
-              //               ],
-              //             ),
-              //           );
-              //       }).toList(),
-              //       onChanged: (String
-              //       value) {
-              //         onChangedDropD(value);
-              //       },
-              //     ),
-              //   ]),
-              // ),
+              Padding(
+                padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
+                child: Row(children: <Widget>[
+                  Text(
+                    "Fakultas :",
+                  ),
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.only(left: 15),
+                      child: DropdownButton(
+                        isExpanded: true,
+                        value: fitem,
+                        items: listFakultas.map((String
+                        value) {
+                          return
+                            DropdownMenuItem(
+                              value: value,
+                              child: Row(
+                                children:
+                                <Widget>[
+                                  Text(value),
+                                ],
+                              ),
+                            );
+                        }).toList(),
+                        onChanged: (String
+                        value) {
+                          onChangedDropD(value);
+                        },
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
+
+              //prodi
+              Padding(
+                padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
+                child: Row(children: <Widget>[
+                  Text(
+                    "Prodi :",
+                  ),
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.only(left: 15),
+                      child: DropdownButton(
+                        isExpanded: true,
+                        value: item,
+                        items: listProdi.map((String
+                        val) {
+                          return
+                            DropdownMenuItem(
+                              value: val,
+                              child: Row(
+                                children:
+                                <Widget>[
+                                  Text(val),
+                                ],
+                              ),
+                            );
+                        }).toList(),
+                        onChanged: (String
+                        value) {
+                          onChangedDrop(value);
+                        },
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
 
               //hobi
-              // Padding(
-              //   padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
-              //   child: Row(children: <Widget>[
-              //     Text(
-              //       "Hobi :",
-              //     ),
-              //     SizedBox(width: 20),
-              //     Container(width: 10),
-              //     Column(
-              //       children:<Widget>[
-              //         Row(children: <Widget>[
-              //           Checkbox(
-              //             value: this.cek1,
-              //             onChanged: (bool value) {
-              //               onChangedCek1(value);
-              //             },
-              //             activeColor: Colors.red,
-              //           ),
-              //           Text ('Badminton'),
-              //           Checkbox(
-              //             value: this.cek2,
-              //             onChanged: (bool value){
-              //               onChangedCek2(value);
-              //             },
-              //             activeColor: Colors.red,
-              //           ),
-              //           Text('Menari'),
-              //         ],),
-              //         Row(children: <Widget>[
-              //           Checkbox(
-              //             value: this.cek3,
-              //             onChanged: (bool value){
-              //               onChangedCek3(value);
-              //             },
-              //             activeColor: Colors.red,
-              //           ),
-              //           Text('Sepakbola'),
-              //           Checkbox(
-              //             value: this.cek4,
-              //             onChanged: (bool value){
-              //               onChangedCek4(value);
-              //             },
-              //             activeColor: Colors.red,
-              //           ),
-              //           Text('Berenang'),
-              //         ],)
-              //       ],
-              //     ),
-              //   ]),
-              // ),
+              Padding(
+                padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
+                child: Row(children: <Widget>[
+                  Text(
+                    "Hobi :",
+                  ),
+                  SizedBox(width: 20),
+                  Container(width: 10),
+                  Column(
+                    children:<Widget>[
+                      Row(children: <Widget>[
+                        Checkbox(
+                          value: this.cek1,
+                          onChanged: (bool value) {
+                            onChangedCek1(value);
+                          },
+                          activeColor: Colors.red,
+                        ),
+                        Text ('Badminton'),
+                        Checkbox(
+                          value: this.cek2,
+                          onChanged: (bool value){
+                            onChangedCek2(value);
+                          },
+                          activeColor: Colors.red,
+                        ),
+                        Text('Menari'),
+                      ],),
+                      Row(children: <Widget>[
+                        Checkbox(
+                          value: this.cek3,
+                          onChanged: (bool value){
+                            onChangedCek3(value);
+                          },
+                          activeColor: Colors.red,
+                        ),
+                        Text('Sepakbola'),
+                        Checkbox(
+                          value: this.cek4,
+                          onChanged: (bool value){
+                            onChangedCek4(value);
+                          },
+                          activeColor: Colors.red,
+                        ),
+                        Text('Berenang'),
+                      ],)
+                    ],
+                  ),
+                ]),
+              ),
 
               //ipk
               Padding(
@@ -363,55 +438,25 @@ class EntryFormState extends State<EntryForm> {
                 ),
               ),
 
-              //prodi
+              //dosen wali
               Padding(
                 padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
-                child: Row(children: <Widget>[
-                  Text(
-                    "Prodi :",
+                child: TextField(
+                  controller: dosenController,
+                  keyboardType: TextInputType.text,
+                  decoration: InputDecoration(
+                    labelText: 'Dosen Wali',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
                   ),
-                  DropdownButton(
-                    value: item,
-                    items: listProdi.map((String
-                    val) {
-                      return
-                        DropdownMenuItem(
-                          value: val,
-                          child: Row(
-                            children:
-                            <Widget>[
-                              Text(val),
-                            ],
-                          ),
-                        );
-                    }).toList(),
-                    onChanged: (String
-                    value) {
-                      onChangedDrop(value);
-                    },
-                  ),
-                ]),
+                  onChanged: (value) {
+                    //
+                  },
+                ),
               ),
 
-              //dosen wali
-              // Padding(
-              //   padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
-              //   child: TextField(
-              //     controller: dosenController,
-              //     keyboardType: TextInputType.text,
-              //     decoration: InputDecoration(
-              //       labelText: 'Dosen Wali',
-              //       border: OutlineInputBorder(
-              //         borderRadius: BorderRadius.circular(5.0),
-              //       ),
-              //     ),
-              //     onChanged: (value) {
-              //       //
-              //     },
-              //   ),
-              // ),
-
-              //gambar
+              // gambar
               // Padding(
               //   padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
               //   child: Row(children: <Widget>[
@@ -460,7 +505,8 @@ class EntryFormState extends State<EntryForm> {
                             // tambah data
                             biodata = Biodata(
                                 namaController.text, nbiController.text, alamatController.text,
-                                ipkController.text, sppController.text);
+                                ipkController.text, sppController.text, tglLahirController.text, fitem, valRadio.toString(),
+                                item, dosenController.text);
                                 // print(value);
                           } else {
                             // ubah data
@@ -469,6 +515,11 @@ class EntryFormState extends State<EntryForm> {
                             biodata.alamat = alamatController.text;
                             biodata.ipk = ipkController.text;
                             biodata.spp = sppController.text;
+                            biodata.tglLahir = tglLahirController.text;
+                            biodata.wali = dosenController.text;
+                            biodata.prodi = item;
+                            biodata.fakultas = fitem;
+                            biodata.kelamin = valRadio.toString();
                           }
                           // kembali ke layar sebelumnya dengan membawa objek contact
                           Navigator.pop(context, biodata);

@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:etsbiodata/ui/entryform.dart';
-import 'package:etsbiodata/models/biodata.dart';
-import 'package:etsbiodata/helper/dbhelper.dart';
-import 'package:sqflite/sqflite.dart';
 import 'dart:async';
+
+import 'package:etsbiodata/helper/dbhelper.dart';
+import 'package:etsbiodata/models/biodata.dart';
+import 'package:etsbiodata/ui/entryform.dart';
+import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -38,7 +39,7 @@ class HomeState extends State<Home> {
   }
 
   Future<Biodata> navigateToEntryForm(
-      BuildContext context, Biodata biodata) async {
+      BuildContext context, Biodata biodata, {bool isEdit = false}) async {
     var result = await Navigator.push(context,
         MaterialPageRoute(builder: (BuildContext context) {
       return EntryForm(biodata);
@@ -47,7 +48,6 @@ class HomeState extends State<Home> {
   }
 
   ListView createListView() {
-    TextStyle textStyle = Theme.of(context).textTheme.subtitle1;
     return ListView.builder(
       itemCount: count,
       itemBuilder: (BuildContext context, int index) {
@@ -60,20 +60,15 @@ class HomeState extends State<Home> {
               child: Icon(Icons.people),
             ),
             title: Text(
-              this.biodataList[index].nama,
-              style: textStyle,
+              this.biodataList[index].nama + " - " + this.biodataList[index].nbi,
             ),
-            subtitle: Text(this.biodataList[index].nbi, semanticsLabel: 'sembarang'),
+            subtitle: Text(this.biodataList[index].fakultas + " (" + this
+                .biodataList[index].prodi + ")",
+                semanticsLabel: ''
+                'sembarang'),
 
-            trailing: GestureDetector(
-              child: Icon(Icons.delete),
-              onTap: () {
-                deleteBiodata(biodataList[index]);
-              },
-            ),
             onTap: () async {
-              var biodata =
-                  await navigateToEntryForm(context, this.biodataList[index]);
+              var biodata = await navigateToEntryForm(context, this.biodataList[index], isEdit: true);
               if (biodata != null) editBiodata(biodata);
             },
           ),
@@ -91,13 +86,6 @@ class HomeState extends State<Home> {
 
   void editBiodata(Biodata object) async {
     int result = await dbHelper.update(object);
-    if (result > 0) {
-      updateListView();
-    }
-  }
-
-  void deleteBiodata(Biodata object) async {
-    int result = await dbHelper.delete(object.id);
     if (result > 0) {
       updateListView();
     }
